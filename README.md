@@ -43,7 +43,7 @@ options:
   -a ANCESTOR           make the family tree from an ancestor (if omitted, the program will try to find an
                         ancestor)
   --format {json,old}   Specify the format
-  -c                    Provided --format=old, then with -cyou can convert the old format to json format.
+  -c                    Provided --format=old, then with -c you can convert the old format to json format (old format formatted with 4-spaces, not tabs).
   --tree-type {family,ancestor,family-ancestor}
                         Specify the tree type, you can choose between family tree (all descendents of one
                         person),ancestor (all ancestors of one person, specify "-a <PERSON>" explicitly), family-
