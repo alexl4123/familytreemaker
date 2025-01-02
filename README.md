@@ -1,6 +1,11 @@
 familytreemaker
 ===============
 
+Forked from [familytreemaker](https://github.com/adrienverge/familytreemaker).
+New main features: **JSON** support, **ANCESTOR TREE**, mixed **ANCESTOR-FAMILY** tree.
+
+
+
 This program creates family tree graphs from simple text files.
 
 The input file format is very simple, you describe persons of your family line
@@ -21,6 +26,29 @@ containing the graph, you will need a graph drawer such as [GraphViz] [1].
 
 Usage
 -----
+
+Synapsis:
+```
+usage: familytreemaker.py [-h] [-a ANCESTOR] [--format {json,old}] [-c]
+                          [--tree-type {family,ancestor,family-ancestor}]
+                          INPUTFILE
+
+Generates a family tree graph from a simple text file
+
+positional arguments:
+  INPUTFILE             the formatted text file representing the family
+
+options:
+  -h, --help            show this help message and exit
+  -a ANCESTOR           make the family tree from an ancestor (if omitted, the program will try to find an
+                        ancestor)
+  --format {json,old}   Specify the format
+  -c                    Provided --format=old, then with -cyou can convert the old format to json format.
+  --tree-type {family,ancestor,family-ancestor}
+                        Specify the tree type, you can choose between family tree (all descendents of one
+                        person),ancestor (all ancestors of one person, specify "-a <PERSON>" explicitly), family-
+                        ancestor (both, family and ancestor tree, specify "-a <PERSON>")
+```
 
 
 The sample family descriptor `LouisXIVfamily.txt` is here to show you the
