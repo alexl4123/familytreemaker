@@ -40,10 +40,12 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -a ANCESTOR           make the family tree from an ancestor (if omitted, the program will try to find an
+  -a ANCESTOR, --ancestor ANCESTOR
+                        make the family tree from an ancestor (if omitted, the program will try to find an
                         ancestor)
   --format {json,old}   Specify the format
-  -c                    Provided --format=old, then with -c you can convert the old format to json format (old format formatted with 4-spaces, not tabs).
+  -c                    Provided --format=old, then with -c you can convert the old format to json format (old
+                        format formatted with 4-spaces, not tabs).
   --tree-type {family,ancestor,family-ancestor}
                         Specify the tree type, you can choose between family tree (all descendents of one
                         person),ancestor (all ancestors of one person, specify "-a <PERSON>" explicitly), family-
@@ -58,7 +60,7 @@ $ ./familytreemaker.py -a 'Louis XIV' LouisXIVfamily.json | dot -Tpdf -o LouisXI
 ```
 For .png run:
 ```
-$ ./familytreemaker.py -a 'Louis XIV' LouisXIVfamily.txt | dot -Tpng -o LouisXIVfamily.png
+$ ./familytreemaker.py --ancestor='Louis XIV' LouisXIVfamily.txt | dot -Tpng -o LouisXIVfamily.png
 ```
 
 Modes:

@@ -591,13 +591,13 @@ def main():
     # Parse command line options
     parser = argparse.ArgumentParser(description=
              'Generates a family tree graph from a simple text file')
-    parser.add_argument('-a', dest='ancestor',
+    parser.add_argument('-a', '--ancestor', dest='ancestor',
                         help='make the family tree from an ancestor (if '+
                         'omitted, the program will try to find an ancestor)')
     parser.add_argument('--format', default='json', choices=['json','old'],
         dest='format', help='Specify the format')
-    parser.add_argument('-c', dest='convert', action='store_true', help='Provided --format=old, then with -c'+
-                        'you can convert the old format to json format.')
+    parser.add_argument('-c', dest='convert', action='store_true', help='Provided --format=old, then with -c '+
+                        'you can convert the old format to json format (old format formatted with 4-spaces, not tabs).')
     parser.add_argument('input', metavar='INPUTFILE',
                         help='the formatted text file representing the family')
     parser.add_argument('--tree-type', dest="tree_type",
