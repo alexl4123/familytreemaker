@@ -75,6 +75,6 @@ You can see the result for the family tree:
 
 You can see the result for the ancestor tree:
 
-![result: PhilippeAncestor.png](/PhilippeAncestor.png)
+![result: PhillippeAncestor.png](/PhillippeAncestor.png)
 
 
