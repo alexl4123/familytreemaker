@@ -1,0 +1,20 @@
+{
+ "individuals": [
+{"id": "LouisXIV", "name":"Louis XIV","sex":"M","birthday":"1638-09-05","deathday":"1715-09-01"},
+{"id": "MarieThrsedAutriche", "name":"Marie-Thérèse d'Autriche","sex":"F"},
+{"id": "Louis1661", "name":"Louis de France","sex":"M","birthday":"1661-11-01","deathday":"1711-04-14"},
+{"id": "MarieThrsendeFrance", "name":"Marie-Thérèse\nde France","sex":"F","surname":"la Petite Madame","birthday":"1667","deathday":"1672"},
+{"id": "PhilippeCharlesndeFrance", "name":"Philippe-Charles\nde France","sex":"M","surname":"Duc d'Anjou","birthday":"1668-08-05"},
+{"id": "MarieAnnenChristinendeBavire", "name":"Marie Anne\nChristine\nde Bavière","sex":"F"},
+{"id": "Louis1682", "name":"Louis de France","sex":"M","birthday":"1682","deathday":"1712-02-19","surname":"duc de Bourgogne"},
+{"id": "Philippe", "name":"Philippe","sex":"M","birthday":"1683","deathday":"1746","surname":"roi d'Espagne\nsous le nom de\nPhilippe V"},
+{"id": "Charles", "name":"Charles","sex":"M","birthday":"1686-07-31"},
+{"id": "MarieAdladendeSavoie", "name":"Marie-Adélaïde\nde Savoie","sex":"F","deathday":"1712-02-12"},
+{"id": "LouisXV", "name":"Louis XV","sex":"M","birthday":"1710-02-15","deathday":"1774-05-10"}
+],
+ "households": [
+{"parents":{"ID0":"LouisXIV","ID1":"MarieThrsedAutriche"},"children":{"ID0":"Louis1661","ID1":"MarieThrsendeFrance","ID2":"PhilippeCharlesndeFrance"}},
+{"parents":{"ID0":"Louis1661","ID1":"MarieAnnenChristinendeBavire"},"children":{"ID0":"Louis1682","ID1":"Philippe","ID2":"Charles"}},
+{"parents":{"ID0":"Louis1682","ID1":"MarieAdladendeSavoie"},"children":{"ID0":"LouisXV"}}
+]
+}

@@ -33,6 +33,7 @@ import argparse
 import random
 import re
 import sys
+import json
 
 class Person:
     """This class represents a person.
@@ -51,6 +52,9 @@ class Person:
         self.attr = {}
         self.parents = []
         self.households = []
+
+        self.name = ''
+        self.id = ''
 
         desc = desc.strip()
         if '(' in desc and ')' in desc:
@@ -75,6 +79,42 @@ class Person:
 
         self.follow_kids = True
 
+    @classmethod
+    def from_json(self, json_object):
+
+        ID_KEY = 'id'
+        NAME_KEY = 'name'
+
+        person = Person('')
+
+        for key in json_object.keys():
+            if key == ID_KEY:
+                person.id = json_object[ID_KEY]
+            elif key == NAME_KEY:
+                person.name = json_object[NAME_KEY]
+            else:
+                person.attr[key] = json_object[key]
+
+        return person
+
+    def to_json(self):
+
+        attr_list = []
+        for attr_key in self.attr.keys():
+            if self.attr[attr_key] == True:
+                attr_list.append(f'"sex":"{attr_key}"')
+            elif attr_key not in ["id"]:
+                attr_list.append(f'"{attr_key}":"{self.attr[attr_key]}"')
+
+        attr_string = ""
+        if len(attr_list) > 0:
+            attr_string = f',{",".join(attr_list)}'
+
+        json_string = "{" + f'"id": "{self.id}", "name":"{self.name}"{attr_string}' + "}"
+
+        return json_string
+
+
     def __str__(self):
         return self.name
 
@@ -84,6 +124,10 @@ class Person:
 
     def graphviz(self):
         label = self.name
+        if 'pretitle' in self.attr:
+            label = self.attr['pretitle'] + ' ' + label
+        if 'posttitle' in self.attr:
+            label += ' ' + self.attr['posttitle']
         if 'surname' in self.attr:
             label += '\\n« ' + str(self.attr['surname']) + '»'        
         if 'nee' in self.attr: # Nee = maiden's name (Geb. in german)
@@ -105,8 +149,16 @@ class Person:
 
         opts = ['label="' + label + '"']
         opts.append('style=filled')
-        opts.append('fillcolor=' + ('F' in self.attr and 'bisque' or
-                    ('M' in self.attr and 'azure2' or 'white')))
+        if 'sex' in self.attr:
+            color = 'white'
+            if self.attr['sex'] == 'F':
+                color = 'bisque'
+            elif self.attr['sex'] == 'M':
+                color = 'azure2'
+            opts.append(f'fillcolor={color}')
+        else:
+            opts.append('fillcolor=' + ('F' in self.attr and 'bisque' or
+                        ('M' in self.attr and 'azure2' or 'white')))
         return self.id + '[' + ','.join(opts) + ']'
 
 class Household:
@@ -121,6 +173,8 @@ class Household:
         self.parents = []
         self.kids = []
         self.id = 0
+
+        self.attr = {}
     
     def __str__(self):
         return    'Family:\n' + \
@@ -132,6 +186,34 @@ class Household:
             return True
         return False
 
+    def to_json(self):
+
+        parents_strings = []
+        index = 0
+        for parent in self.parents:
+            parents_strings.append(f'"ID{index}":"{parent.id}"')
+            index += 1
+
+        children_strings = []
+        index = 0
+        for child in self.kids:
+            children_strings.append(f'"ID{index}":"{child.id}"')
+            index += 1
+
+        json_attrs = []
+        for attr_key in self.attr:
+            json_strings.append(f'"{attr_key}":"{self.attr[attr_key]}"')
+
+        json_attr_string = ""
+        if len(json_attrs) > 0:
+            json_attr_string = "," + ",".join(json_attrs)
+
+        json_string = "{" +\
+            f'"parents":' + '{' + f'{",".join(parents_strings)}' + '},' +\
+            f'"children":' + '{' + f'{",".join(children_strings)}' + '}' +\
+            json_attr_string + "}"
+        return json_string
+
 class Family:
     """Represents the whole family.
 
@@ -140,10 +222,15 @@ class Family:
 
     """
 
-    everybody = {}
-    households = []
+    invisible = '[shape=circle,label="",height=0.11,width=0.11]'
 
-    invisible = '[shape=circle,label="",height=0.11,width=0.11]';
+    def __init__(self):
+        self.everybody = {}
+        self.households = []
+
+        self.INDIVIDUALS_KEY = 'individuals'
+        self.HOUSEHOLDS_KEY = 'households'
+
 
     def add_person(self, string):
         """Adds a person to self.everybody, or update his/her info if this
@@ -180,15 +267,61 @@ class Family:
         """Tries to find a person matching the 'name' argument.
 
         """
-        # First, search in ids
-        if name in self.everybody:
-            return self.everybody[name]
-        # Ancestor not found in 'id', maybe it's in the 'name' field?
-        for p in self.everybody.values():
-            if p.name == name:
-                return p
-        return None
+        if "," in name:
+            names = name.split(",")
+        else:
+            names = [name]
         
+        persons = []
+        for name in names:
+            # First, search in ids
+            if name in self.everybody:
+                persons.append(self.everybody[name])
+            # Ancestor not found in 'id', maybe it's in the 'name' field?
+            for p in self.everybody.values():
+                if p.name == name:
+                    persons.append(p)
+
+        if len(persons) > 0:
+            return persons
+        else:
+            return None
+
+    def populate_json(self, f):
+        PARENTS_KEY = "parents"
+        CHILDREN_KEY = "children"
+
+        data = json.load(f)
+
+        if self.INDIVIDUALS_KEY not in data or self.HOUSEHOLDS_KEY not in data:
+            raise Exception('Input json data not supported,'+
+                'check that keys "individuals" and "households" are present!')
+
+        for individual in data[self.INDIVIDUALS_KEY]:
+            p = Person.from_json(individual)
+
+            if p.id not in self.everybody:
+                self.everybody[p.id] = p
+
+        for household in data[self.HOUSEHOLDS_KEY]:
+            parents = list(household[PARENTS_KEY].values())
+            children = list(household[CHILDREN_KEY].values())
+
+            household = Household()
+
+
+
+            for parent_key in parents:
+                parent = self.everybody[parent_key]
+                household.parents.append(parent)
+
+            for child_key in children:
+                child = self.everybody[child_key]
+                child.parents = household.parents
+                household.kids.append(child)
+
+            self.add_household(household)
+
     def populate(self, f):
         """Reads the input file line by line, to find persons and unions.
 
@@ -276,15 +409,18 @@ class Family:
         return    household.parents[0] == person \
                 and household.parents[1] or household.parents[0]
 
-    def display_generation(self, gen):
+    def display_generation(self, gen, people_printed = {}):
         """Outputs an entire generation in DOT format.
 
         """
         # Display persons
         print('\t{ rank=same;')
 
+        generation_already_printed = {}
+
         prev = None
         for p in gen:
+
             l = len(p.households)
 
             if prev:
@@ -306,6 +442,8 @@ class Family:
             for i in range(0, int(l/2)):
                 h = p.households[i]
                 spouse = Family.get_spouse(h, p)
+                if spouse.id not in people_printed:
+                    people_printed[spouse.id] = spouse
                 print('\t\t%s -> h%d -> %s;' % (spouse.id, h.id, p.id))
                 print('\t\th%d%s;' % (h.id, Family.invisible))
 
@@ -313,6 +451,8 @@ class Family:
             for i in range(int(l/2), l):
                 h = p.households[i]
                 spouse = Family.get_spouse(h, p)
+                if spouse.id not in people_printed:
+                    people_printed[spouse.id] = spouse
                 print('\t\t%s -> h%d -> %s;' % (p.id, h.id, spouse.id))
                 print('\t\th%d%s;' % (h.id, Family.invisible))
                 prev = spouse.id
@@ -323,6 +463,7 @@ class Family:
         prev = None
         for p in gen:
             for h in p.households:
+
                 if len(h.kids) == 0:
                     continue
                 if prev:
@@ -339,37 +480,53 @@ class Family:
 
         for p in gen:
             for h in p.households:
+
                 if len(h.kids) > 0:
                     print('\t\th%d -> h%d_%d;'
                           % (h.id, h.id, int(len(h.kids)/2)))
                     i = 0
                     for c in h.kids:
+                        if c.id not in people_printed:
+                            people_printed[c.id] = c
                         print('\t\th%d_%d -> %s;'
                               % (h.id, i, c.id))
                         i += 1
                         if i == len(h.kids)/2:
                             i += 1
 
-    def output_nodes(self):
-        for p in self.everybody.values():
+    def output_nodes(self, people_printed = {}):
+
+        if len(list(people_printed.keys())) == 0:
+            people_printed = self.everybody
+        for p in people_printed.values():
             print('\t' + p.graphviz() + ';')
         print('')
 
-    def output_ascending_tree(self, ancestor):
+    def output_ascending_tree(self, ancestor, people_printed = {}):
         """Outputs the whole descending family tree from a given ancestor,
         in DOT format.
 
         """
 
         # Find the first households
-        gen = [ancestor]
+        gen = ancestor
 
-        gen = self.previous_generation(gen)
+        new_gen = []
+        for person in gen:
+            if person.id not in people_printed:
+                people_printed[person.id] = person
+
+            new_gen += person.parents
+
+        gen = new_gen
 
         while gen:
 
             single_household_generation = []
             for person in gen:
+                if person.id not in people_printed:
+                    people_printed[person.id] = person
+
                 if person in single_household_generation:
                     continue
             
@@ -383,26 +540,49 @@ class Family:
                 if person_in_household_in_list is False:
                     single_household_generation.append(person)
 
-            self.display_generation(single_household_generation)
+            self.display_generation(single_household_generation, people_printed=people_printed)
 
             gen = self.previous_generation(gen)
 
+        return people_printed
 
 
-
-    def output_descending_tree(self, ancestor):
+    def output_descending_tree(self, ancestor, people_printed = {}):
         """Outputs the whole descending family tree from a given ancestor,
         in DOT format.
 
         """
         # Find the first households
-        gen = [ancestor]
+        gen = [ancestor[0]]
 
-
+        descending_printed = {}
+        
         while gen:
-            self.display_generation(gen)
+            for person in gen:
+                if person.id not in people_printed:
+                    people_printed[person.id] = person
+
+            self.display_generation(gen, people_printed= people_printed)
             gen = self.next_generation(gen)
 
+        return people_printed
+
+def convert_to_json(family):
+    """
+    Convert family to json:
+    """
+
+    json_persons = []
+    for person in family.everybody.values():
+        json_persons.append(person.to_json())
+
+    json_households = []
+    for household in family.households:
+        json_households.append(household.to_json())
+    
+    json_string = '{\n "individuals": [\n' + ",\n".join(json_persons) + '\n],\n "households": [\n' + ",\n".join(json_households) + '\n]\n}' 
+
+    return json_string
 
 def main():
     """Entry point of the program when called as a script.
@@ -414,8 +594,16 @@ def main():
     parser.add_argument('-a', dest='ancestor',
                         help='make the family tree from an ancestor (if '+
                         'omitted, the program will try to find an ancestor)')
+    parser.add_argument('--format', default='json', choices=['json','old'],
+        dest='format', help='Specify the format')
+    parser.add_argument('-c', dest='convert', action='store_true', help='Provided --format=old, then with -c'+
+                        'you can convert the old format to json format.')
     parser.add_argument('input', metavar='INPUTFILE',
                         help='the formatted text file representing the family')
+    parser.add_argument('--tree-type', dest="tree_type",
+        default='family-ancestor', choices=['family','ancestor','family-ancestor'],
+        help='Specify the tree type, you can choose between family tree (all descendents of one person),'+ 
+                        'ancestor (all ancestors of one person, specify "-a <PERSON>" explicitly), family-ancestor (both, family and ancestor tree, specify "-a <PERSON>")')
     args = parser.parse_args()
 
     # Create the family
@@ -423,8 +611,16 @@ def main():
 
     # Populate the family
     f = open(args.input, 'r', encoding='utf-8')
-    family.populate(f)
+    if args.format == 'json':
+        family.populate_json(f)
+    else:
+        family.populate(f)
     f.close()
+
+    if args.convert is True:
+        json = convert_to_json(family) 
+        print(json)
+        quit(0)
 
     # Find the ancestor from whom the tree is built
     if args.ancestor:
@@ -432,17 +628,21 @@ def main():
         if not ancestor:
             raise Exception('Cannot find person "' + args.ancestor + '"')
     else:
-        ancestor = family.find_first_ancestor()
+        ancestor = [family.find_first_ancestor()]
 
     # Output the graph descriptor, in DOT format
     print('digraph {\n' + \
             '    nodesep=0.5; ranksep=1.5;'
             '    node [shape=note];\n' + \
             '    edge [dir=none];\n')
-    family.output_nodes()
+    
+    people_printed = {}
+    if args.tree_type in ['ancestor', 'family-ancestor']:
+        family.output_ascending_tree(ancestor, people_printed=people_printed)
+    if args.tree_type in ['family', 'family-ancestor']:
+        family.output_descending_tree(ancestor, people_printed=people_printed)
 
-    family.output_ascending_tree(ancestor)
-    family.output_descending_tree(ancestor)
+    family.output_nodes(people_printed=people_printed)
 
     print('}')
 
